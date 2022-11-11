@@ -1,46 +1,44 @@
 <?php
-require_once('Config/Config.php');
-require_once 'Helpers/Helpers.php';
-require_once 'Helpers/Session.php';
+session_start();
+require_once 'autoload.php';
+require_once 'config/db.php';
+require_once 'config/parameters.php';
+require_once 'helpers/utils.php';
+require_once 'views/layout/header.php';
+// require_once 'views/layout/sidebar.php';
 
-
-$ruta = !empty($_GET['url']) ? $_GET['url'] : CONTROLLER_DEFAULT . "/" . METHOD_DEFAULT;
-$array = explode("/", $ruta);
-$controller = $array[0];
-
-$method = METHOD_DEFAULT;
-$parameter = "";
-if (!empty($array[1])) {
-    if (!empty($array[1] != "")) {
-        $method = $array[1];
-    }
-}
-if (!empty($array[2])) {
-    if (!empty($array[2] != "")) {
-        for ($i = 2; $i < count($array); $i++) {
-            $parameter .= $array[$i] . ",";
-        }
-        $parameter = trim($parameter, ",");
-    }
+function show_error(){
+	$error = new ErrorController();
+	$error->index();
 }
 
-require_once 'Config/App/Autoload.php';
+if(isset($_GET['controller'])){
+	$nombre_controlador = $_GET['controller'].'Controller';
 
-$dirController = CONTROLLER . "/" . ucwords($controller) . ".php";
-$errorController = CONTROLLER . "/" . CONTROLLER_ERROR. ".php";
-
-if (file_exists($dirController)) {
-    require_once $dirController;
-    $controller = new $controller();
-    if (method_exists($controller, $method)) {
-        $controller->$method($parameter);
-    } else {
-        require_once $errorController;
-        $controller = new Error404;
-        $controller->index();
-    }
-} else {
-    require_once $errorController;
-    $controller = new Error404;
-    $controller->index();
+}elseif(!isset($_GET['controller']) && !isset($_GET['action'])){
+	$nombre_controlador = controller_default;
+	
+}else{
+	show_error();
+	exit();
 }
+
+if(class_exists($nombre_controlador)){	
+	$controlador = new $nombre_controlador();
+	
+	if(isset($_GET['action']) && method_exists($controlador, $_GET['action'])){
+		$action = $_GET['action'];
+		$controlador->$action();
+	}elseif(!isset($_GET['controller']) && !isset($_GET['action'])){
+		$action_default = action_default;
+		$controlador->$action_default();
+	}else{
+		show_error();
+	}
+}else{
+	show_error();
+}
+
+require_once 'views/layout/footer.php';
+
+
